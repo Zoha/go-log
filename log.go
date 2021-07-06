@@ -24,9 +24,13 @@ func (l Logger) getLogDestination() io.Writer {
 func (l Logger) Log(a ...interface{}) {
 	logDestination := l.getLogDestination()
 
-	args := append(a, 0)
-	copy(args[1:], args)
-	args[0] = l.prefix
+	args := a
+	// if we have prefix we should add it to args list
+	if l.prefix != "" {
+		args = append(a, 0)
+		copy(args[1:], args)
+		args[0] = l.prefix
+	}
 
 	fmt.Fprintln(logDestination, args...)
 }
