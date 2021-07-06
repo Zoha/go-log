@@ -9,6 +9,7 @@ import (
 
 type Logger struct {
 	logDestination io.Writer
+	prefix         string
 }
 
 func (l Logger) getLogDestination() io.Writer {
@@ -22,12 +23,17 @@ func (l Logger) getLogDestination() io.Writer {
 
 func (l Logger) Log(a ...interface{}) {
 	logDestination := l.getLogDestination()
-	fmt.Fprintln(logDestination, a...)
+
+	args := append(a, 0)
+	copy(args[1:], args)
+	args[0] = l.prefix
+
+	fmt.Fprintln(logDestination, args...)
 }
 
 func (l Logger) LogF(format string, a ...interface{}) {
 	logDestination := l.getLogDestination()
-	fmt.Fprintf(logDestination, format, a...)
+	fmt.Fprintf(logDestination, l.prefix+format, a...)
 }
 
 func (l *Logger) Begin() {
@@ -38,4 +44,12 @@ func (l *Logger) Begin() {
 func (l *Logger) End() {
 	l.Log("END")
 	l.logDestination = ioutil.Discard
+}
+
+func (l *Logger) Prefix(prefixes ...string) {
+	joinedStr := ""
+	for _, str := range prefixes {
+		joinedStr += str + ": "
+	}
+	l.prefix = joinedStr
 }
