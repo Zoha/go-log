@@ -11,8 +11,7 @@ func TestLogger_Log(t *testing.T) {
 	msgToLog := "my message to log"
 	expectedLog := "TestLogger_Log: " + msgToLog + "\n"
 
-	log := Logger{}
-
+	log := Begin()
 	log.logDestination = &output
 	log.Log(msgToLog)
 
@@ -29,7 +28,7 @@ func TestLogger_LogF(t *testing.T) {
 	formatToLog := "Hello %v"
 	expectedLog := "TestLogger_LogF: " + "Hello " + name
 
-	log := Logger{}
+	log := Begin()
 
 	log.logDestination = &output
 	log.LogF(formatToLog, name)
