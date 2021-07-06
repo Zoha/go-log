@@ -7,11 +7,13 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 )
 
 type Logger struct {
 	logDestination io.Writer
 	prefix         string
+	startTime      time.Time
 }
 
 func getCallerFuncName() string {
@@ -69,15 +71,20 @@ func (l Logger) LogF(format string, a ...interface{}) {
 	fmt.Fprintf(logDestination, prefix+format, a...)
 }
 
-func (l *Logger) Begin() {
-	l.logDestination = os.Stdout
-	l.Log("BEGIN")
+func Begin() Logger {
+	logger := Logger{
+		logDestination: os.Stdout,
+		startTime:      time.Now(),
+	}
+	logger.Log("BEGIN")
+	return logger
 }
 
 func (l *Logger) End() {
 	// reset the prefix
 	l.prefix = ""
-	l.Log("END")
+	executionMicroseconds := time.Since(l.startTime).Microseconds()
+	l.LogF("END δt=%vµs\n", executionMicroseconds)
 	l.logDestination = ioutil.Discard
 }
 
