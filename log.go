@@ -42,6 +42,8 @@ func (l *Logger) Begin() {
 }
 
 func (l *Logger) End() {
+	// reset the prefix
+	l.prefix = ""
 	l.Log("END")
 	l.logDestination = ioutil.Discard
 }
