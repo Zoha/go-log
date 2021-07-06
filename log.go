@@ -14,17 +14,23 @@ type Logger struct {
 	logDestination io.Writer
 	prefix         string
 	startTime      time.Time
+	level          uint8
 }
 
 func getCallerFuncName() string {
-	// get caller func
-	pc, callerFileName, _, _ := runtime.Caller(2)
 	// get current go file name
 	_, currentFileName, _, _ := runtime.Caller(0)
 
-	// if is this file (logged from this package funcs) skip to another func
-	if currentFileName == callerFileName {
-		pc, _, _, _ = runtime.Caller(3)
+	var pc uintptr
+	var callerFileName string
+	skipIndex := 1
+	for {
+		skipIndex += 1
+		pc, callerFileName, _, _ = runtime.Caller(skipIndex)
+		// if is this file (logged from this package funcs) skip to another func
+		if currentFileName != callerFileName || skipIndex > 5 {
+			break
+		}
 	}
 
 	caller := runtime.FuncForPC(pc)
@@ -36,7 +42,7 @@ func getCallerFuncName() string {
 	return callerFuncName
 }
 
-func (l Logger) getLogDestination() io.Writer {
+func getLogDestination(l Logger) io.Writer {
 	// use l.logDestination or io.Discard by default for log destination
 	logDestination := l.logDestination
 	if logDestination == nil {
@@ -45,8 +51,8 @@ func (l Logger) getLogDestination() io.Writer {
 	return logDestination
 }
 
-func (l Logger) Log(a ...interface{}) {
-	logDestination := l.getLogDestination()
+func log(l Logger, a ...interface{}) {
+	logDestination := getLogDestination(l)
 
 	funcName := getCallerFuncName()
 	prefix := funcName + ":"
@@ -64,8 +70,8 @@ func (l Logger) Log(a ...interface{}) {
 	fmt.Fprintln(logDestination, args...)
 }
 
-func (l Logger) LogF(format string, a ...interface{}) {
-	logDestination := l.getLogDestination()
+func logF(l Logger, format string, a ...interface{}) {
+	logDestination := getLogDestination(l)
 	funcName := getCallerFuncName()
 	prefix := funcName + ": " + l.prefix
 	fmt.Fprintf(logDestination, prefix+format, a...)
@@ -75,23 +81,116 @@ func Begin() Logger {
 	logger := Logger{
 		logDestination: os.Stdout,
 		startTime:      time.Now(),
+		level:          6,
 	}
-	logger.Log("BEGIN")
+	logger.Trace("BEGIN")
 	return logger
 }
 
 func (l *Logger) End() {
 	// reset the prefix
 	l.prefix = ""
+	l.level = 6
 	executionMicroseconds := time.Since(l.startTime).Microseconds()
-	l.LogF("END δt=%vµs\n", executionMicroseconds)
+	l.TraceF("END δt=%vµs\n", executionMicroseconds)
 	l.logDestination = ioutil.Discard
 }
 
-func (l *Logger) Prefix(prefixes ...string) {
+func (l *Logger) Prefix(prefixes ...string) Logger {
 	joinedStr := ""
 	for _, str := range prefixes {
 		joinedStr += str + ": "
 	}
 	l.prefix = joinedStr
+
+	return *l
+}
+
+func (l *Logger) Level(level uint8) Logger {
+	l.level = level
+	return *l
+}
+
+func (l *Logger) Alert(a ...interface{}) {
+	if l.level >= 1 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) AlertF(format string, a ...interface{}) {
+	if l.level >= 1 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Error(a ...interface{}) {
+	if l.level >= 1 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) ErrorF(format string, a ...interface{}) {
+	if l.level >= 1 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Warn(a ...interface{}) {
+	if l.level >= 2 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) WarnF(format string, a ...interface{}) {
+	if l.level >= 2 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Highlight(a ...interface{}) {
+	if l.level >= 3 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) HighlightF(format string, a ...interface{}) {
+	if l.level >= 3 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Inform(a ...interface{}) {
+	if l.level >= 4 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) InformF(format string, a ...interface{}) {
+	if l.level >= 4 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Log(a ...interface{}) {
+	if l.level >= 5 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) LogF(format string, a ...interface{}) {
+	if l.level >= 5 {
+		logF(*l, format, a...)
+	}
+}
+
+func (l *Logger) Trace(a ...interface{}) {
+	if l.level >= 6 {
+		log(*l, a...)
+	}
+}
+
+func (l *Logger) TraceF(format string, a ...interface{}) {
+	if l.level >= 6 {
+		logF(*l, format, a...)
+	}
 }
