@@ -5,11 +5,33 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"runtime"
+	"strings"
 )
 
 type Logger struct {
 	logDestination io.Writer
 	prefix         string
+}
+
+func getCallerFuncName() string {
+	// get caller func
+	pc, callerFileName, _, _ := runtime.Caller(2)
+	// get current go file name
+	_, currentFileName, _, _ := runtime.Caller(0)
+
+	// if is this file (logged from this package funcs) skip to another func
+	if currentFileName == callerFileName {
+		pc, _, _, _ = runtime.Caller(3)
+	}
+
+	caller := runtime.FuncForPC(pc)
+
+	// convert something.else.funcName to funcName
+	name := caller.Name()
+	callersStack := strings.Split(name, ".")
+	callerFuncName := callersStack[len(callersStack)-1]
+	return callerFuncName
 }
 
 func (l Logger) getLogDestination() io.Writer {
@@ -24,20 +46,27 @@ func (l Logger) getLogDestination() io.Writer {
 func (l Logger) Log(a ...interface{}) {
 	logDestination := l.getLogDestination()
 
-	args := a
-	// if we have prefix we should add it to args list
+	funcName := getCallerFuncName()
+	prefix := funcName + ":"
 	if l.prefix != "" {
-		args = append(a, 0)
-		copy(args[1:], args)
-		args[0] = l.prefix
+		// we add  an extra space for extra args space (alignment)
+		prefix += " " + l.prefix
 	}
+
+	args := a
+	// prepend prefixes (func name and other prefixes) to args
+	args = append(a, 0)
+	copy(args[1:], args)
+	args[0] = prefix
 
 	fmt.Fprintln(logDestination, args...)
 }
 
 func (l Logger) LogF(format string, a ...interface{}) {
 	logDestination := l.getLogDestination()
-	fmt.Fprintf(logDestination, l.prefix+format, a...)
+	funcName := getCallerFuncName()
+	prefix := funcName + ": " + l.prefix
+	fmt.Fprintf(logDestination, prefix+format, a...)
 }
 
 func (l *Logger) Begin() {

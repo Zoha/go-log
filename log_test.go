@@ -9,7 +9,7 @@ func TestLogger_Log(t *testing.T) {
 	var output strings.Builder
 
 	msgToLog := "my message to log"
-	expectedLog := msgToLog + "\n"
+	expectedLog := "TestLogger_Log: " + msgToLog + "\n"
 
 	log := Logger{}
 
@@ -27,7 +27,7 @@ func TestLogger_LogF(t *testing.T) {
 
 	name := "Zoha"
 	formatToLog := "Hello %v"
-	expectedLog := "Hello " + name
+	expectedLog := "TestLogger_LogF: " + "Hello " + name
 
 	log := Logger{}
 
