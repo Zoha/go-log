@@ -81,7 +81,7 @@ func Begin() Logger {
 	logger := Logger{
 		logDestination: os.Stdout,
 		startTime:      time.Now(),
-		level:          6,
+		level:          0,
 	}
 	logger.Trace("BEGIN")
 	return logger
